@@ -113,9 +113,13 @@ void TransformToStart(PointType const *const pi, PointType *const po)
   // interpolation ratio
   double s;
   if (DISTORTION)
+  {
     s = (pi->intensity - int(pi->intensity)) / SCAN_PERIOD;
+  }
   else
+  {
     s = 1.0;
+  }
   // s = 1;
   Eigen::Quaterniond q_point_last = Eigen::Quaterniond::Identity( ).slerp(s, q_last_curr);
   Eigen::Vector3d t_point_last    = s * t_last_curr;
@@ -129,7 +133,6 @@ void TransformToStart(PointType const *const pi, PointType *const po)
 }
 
 // transform all lidar points to the start of the next frame
-
 void TransformToEnd(PointType const *const pi, PointType *const po)
 {
   // undistort point first
@@ -221,7 +224,9 @@ int main(int argc, char **argv)
   {
     ros::spinOnce( );
 
-    if (!cornerSharpBuf.empty( ) && !cornerLessSharpBuf.empty( ) && !surfFlatBuf.empty( ) && !surfLessFlatBuf.empty( ) && !fullPointsBuf.empty( ))
+    if (!cornerSharpBuf.empty( ) && !cornerLessSharpBuf.empty( )
+        && !surfFlatBuf.empty( ) && !surfLessFlatBuf.empty( )
+        && !fullPointsBuf.empty( ))
     {
       timeCornerPointsSharp     = cornerSharpBuf.front( )->header.stamp.toSec( );
       timeCornerPointsLessSharp = cornerLessSharpBuf.front( )->header.stamp.toSec( );
@@ -229,7 +234,8 @@ int main(int argc, char **argv)
       timeSurfPointsLessFlat    = surfLessFlatBuf.front( )->header.stamp.toSec( );
       timeLaserCloudFullRes     = fullPointsBuf.front( )->header.stamp.toSec( );
 
-      if (timeCornerPointsSharp != timeLaserCloudFullRes || timeCornerPointsLessSharp != timeLaserCloudFullRes || timeSurfPointsFlat != timeLaserCloudFullRes || timeSurfPointsLessFlat != timeLaserCloudFullRes)
+      if (timeCornerPointsSharp != timeLaserCloudFullRes || timeCornerPointsLessSharp != timeLaserCloudFullRes
+          || timeSurfPointsFlat != timeLaserCloudFullRes || timeSurfPointsLessFlat != timeLaserCloudFullRes)
       {
         // printf("unsync messeage!");
         ROS_BREAK( );
@@ -270,15 +276,15 @@ int main(int argc, char **argv)
         int surfPointsFlatNum    = surfPointsFlat->points.size( );
 
         TicToc t_opt;
+        // iteration to get best correspondences
         for (size_t opti_counter = 0; opti_counter < 2; ++opti_counter)
         {
           corner_correspondence = 0;
           plane_correspondence  = 0;
 
           // ceres::LossFunction *loss_function = NULL;
-          ceres::LossFunction *loss_function = new ceres::HuberLoss(0.1);
-          ceres::LocalParameterization *q_parameterization =
-              new ceres::EigenQuaternionParameterization( );
+          ceres::LossFunction *loss_function               = new ceres::HuberLoss(0.1);
+          ceres::LocalParameterization *q_parameterization = new ceres::EigenQuaternionParameterization( );
           ceres::Problem::Options problem_options;
 
           ceres::Problem problem(problem_options);
@@ -308,13 +314,19 @@ int main(int argc, char **argv)
               {
                 // if in the same scan line, continue
                 if (int(laserCloudCornerLast->points[j].intensity) <= closestPointScanID)
+                {
                   continue;
+                }
 
                 // if not in nearby scans, end the loop
                 if (int(laserCloudCornerLast->points[j].intensity) > (closestPointScanID + NEARBY_SCAN))
+                {
                   break;
+                }
 
-                double pointSqDis = (laserCloudCornerLast->points[j].x - pointSel.x) * (laserCloudCornerLast->points[j].x - pointSel.x) + (laserCloudCornerLast->points[j].y - pointSel.y) * (laserCloudCornerLast->points[j].y - pointSel.y) + (laserCloudCornerLast->points[j].z - pointSel.z) * (laserCloudCornerLast->points[j].z - pointSel.z);
+                double pointSqDis = (laserCloudCornerLast->points[j].x - pointSel.x) * (laserCloudCornerLast->points[j].x - pointSel.x)
+                                    + (laserCloudCornerLast->points[j].y - pointSel.y) * (laserCloudCornerLast->points[j].y - pointSel.y)
+                                    + (laserCloudCornerLast->points[j].z - pointSel.z) * (laserCloudCornerLast->points[j].z - pointSel.z);
 
                 if (pointSqDis < minPointSqDis2)
                 {
@@ -329,11 +341,15 @@ int main(int argc, char **argv)
               {
                 // if in the same scan line, continue
                 if (int(laserCloudCornerLast->points[j].intensity) >= closestPointScanID)
+                {
                   continue;
+                }
 
                 // if not in nearby scans, end the loop
                 if (int(laserCloudCornerLast->points[j].intensity) < (closestPointScanID - NEARBY_SCAN))
+                {
                   break;
+                }
 
                 double pointSqDis = (laserCloudCornerLast->points[j].x - pointSel.x) * (laserCloudCornerLast->points[j].x - pointSel.x) + (laserCloudCornerLast->points[j].y - pointSel.y) * (laserCloudCornerLast->points[j].y - pointSel.y) + (laserCloudCornerLast->points[j].z - pointSel.z) * (laserCloudCornerLast->points[j].z - pointSel.z);
 
@@ -359,14 +375,18 @@ int main(int argc, char **argv)
 
               double s;
               if (DISTORTION)
+              {
                 s = (cornerPointsSharp->points[i].intensity - int(cornerPointsSharp->points[i].intensity)) / SCAN_PERIOD;
+              }
               else
+              {
                 s = 1.0;
+              }
               ceres::CostFunction *cost_function = LidarEdgeFactor::Create(curr_point, last_point_a, last_point_b, s);
               problem.AddResidualBlock(cost_function, loss_function, para_q, para_t);
               corner_correspondence++;
             }
-          }
+          } // endfor: corner
 
           // find correspondence for plane features
           for (int i = 0; i < surfPointsFlatNum; ++i)
@@ -388,7 +408,9 @@ int main(int argc, char **argv)
               {
                 // if not in nearby scans, end the loop
                 if (int(laserCloudSurfLast->points[j].intensity) > (closestPointScanID + NEARBY_SCAN))
+                {
                   break;
+                }
 
                 double pointSqDis = (laserCloudSurfLast->points[j].x - pointSel.x) * (laserCloudSurfLast->points[j].x - pointSel.x) + (laserCloudSurfLast->points[j].y - pointSel.y) * (laserCloudSurfLast->points[j].y - pointSel.y) + (laserCloudSurfLast->points[j].z - pointSel.z) * (laserCloudSurfLast->points[j].z - pointSel.z);
 
@@ -411,7 +433,9 @@ int main(int argc, char **argv)
               {
                 // if not in nearby scans, end the loop
                 if (int(laserCloudSurfLast->points[j].intensity) < (closestPointScanID - NEARBY_SCAN))
+                {
                   break;
+                }
 
                 double pointSqDis = (laserCloudSurfLast->points[j].x - pointSel.x) * (laserCloudSurfLast->points[j].x - pointSel.x) + (laserCloudSurfLast->points[j].y - pointSel.y) * (laserCloudSurfLast->points[j].y - pointSel.y) + (laserCloudSurfLast->points[j].z - pointSel.z) * (laserCloudSurfLast->points[j].z - pointSel.z);
 
@@ -446,15 +470,19 @@ int main(int argc, char **argv)
 
                 double s;
                 if (DISTORTION)
+                {
                   s = (surfPointsFlat->points[i].intensity - int(surfPointsFlat->points[i].intensity)) / SCAN_PERIOD;
+                }
                 else
+                {
                   s = 1.0;
+                }
                 ceres::CostFunction *cost_function = LidarPlaneFactor::Create(curr_point, last_point_a, last_point_b, last_point_c, s);
                 problem.AddResidualBlock(cost_function, loss_function, para_q, para_t);
                 plane_correspondence++;
               }
             }
-          }
+          } // endfor: plane
 
           ////printf("coner_correspondance %d, plane_correspondence %d \n", corner_correspondence, plane_correspondence);
           // printf("data association time %f ms \n", t_data.toc());
@@ -472,12 +500,12 @@ int main(int argc, char **argv)
           ceres::Solver::Summary summary;
           ceres::Solve(options, &problem, &summary);
           // printf("solver time %f ms \n", t_solver.toc());
-        }
+        } // endfor: opti_counter
         // printf("optimization twice time %f \n", t_opt.toc());
 
         t_w_curr = t_w_curr + q_w_curr * t_last_curr;
         q_w_curr = q_w_curr * q_last_curr;
-      }
+      } // endelse: systemInited
 
       TicToc t_pub;
 
@@ -566,11 +594,14 @@ int main(int argc, char **argv)
       // printf("publication time %f ms \n", t_pub.toc());
       // printf("whole laserOdometry time %f ms \n", t_whole.toc());
       if (t_whole.toc( ) > 100)
+      {
         ROS_WARN("odometry process over 100ms");
+      }
 
       frameCount++;
     }
     rate.sleep( );
-  }
+  } // endwhile: rosok
+
   return 0;
 }

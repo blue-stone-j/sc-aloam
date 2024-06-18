@@ -237,7 +237,9 @@ void process( )
     {
       mBuf.lock( );
       while (!odometryBuf.empty( ) && odometryBuf.front( )->header.stamp.toSec( ) < cornerLastBuf.front( )->header.stamp.toSec( ))
+      {
         odometryBuf.pop( );
+      }
       if (odometryBuf.empty( ))
       {
         mBuf.unlock( );
@@ -253,7 +255,9 @@ void process( )
       }
 
       while (!fullResBuf.empty( ) && fullResBuf.front( )->header.stamp.toSec( ) < cornerLastBuf.front( )->header.stamp.toSec( ))
+      {
         fullResBuf.pop( );
+      }
       if (fullResBuf.empty( ))
       {
         mBuf.unlock( );
@@ -312,11 +316,17 @@ void process( )
       int centerCubeK = int((t_w_curr.z( ) + 25.0) / 50.0) + laserCloudCenDepth;
 
       if (t_w_curr.x( ) + 25.0 < 0)
+      {
         centerCubeI--;
+      }
       if (t_w_curr.y( ) + 25.0 < 0)
+      {
         centerCubeJ--;
+      }
       if (t_w_curr.z( ) + 25.0 < 0)
+      {
         centerCubeK--;
+      }
 
       while (centerCubeI < 3)
       {
@@ -558,9 +568,8 @@ void process( )
         for (int iterCount = 0; iterCount < 2; iterCount++)
         {
           // ceres::LossFunction *loss_function = NULL;
-          ceres::LossFunction *loss_function = new ceres::HuberLoss(0.1);
-          ceres::LocalParameterization *q_parameterization =
-              new ceres::EigenQuaternionParameterization( );
+          ceres::LossFunction *loss_function               = new ceres::HuberLoss(0.1);
+          ceres::LocalParameterization *q_parameterization = new ceres::EigenQuaternionParameterization( );
           ceres::Problem::Options problem_options;
 
           ceres::Problem problem(problem_options);
@@ -615,7 +624,7 @@ void process( )
                 problem.AddResidualBlock(cost_function, loss_function, parameters, parameters + 4);
                 corner_num++;
               }
-            }
+            } // endif: close
             /*
             else if(pointSearchSqDis[4] < 0.01 * sqrtDis)
             {
@@ -633,7 +642,7 @@ void process( )
               problem.AddResidualBlock(cost_function, loss_function, parameters, parameters + 4);
             }
             */
-          }
+          } // endfor: corner
 
           int surf_num = 0;
           for (int i = 0; i < laserCloudSurfStackNum; i++)
@@ -677,7 +686,7 @@ void process( )
                 problem.AddResidualBlock(cost_function, loss_function, parameters, parameters + 4);
                 surf_num++;
               }
-            }
+            } // endif: close
             /*
             else if(pointSearchSqDis[4] < 0.01 * sqrtDis)
             {
@@ -695,7 +704,7 @@ void process( )
               problem.AddResidualBlock(cost_function, loss_function, parameters, parameters + 4);
             }
             */
-          }
+          } // endfor: plane
 
           ////printf("corner num %d used corner num %d \n", laserCloudCornerStackNum, corner_num);
           ////printf("surf num %d used surf num %d \n", laserCloudSurfStackNum, surf_num);
@@ -717,9 +726,9 @@ void process( )
           ////printf("corner factor num %d surf factor num %d\n", corner_num, surf_num);
           ////printf("result q %f %f %f %f result t %f %f %f\n", parameters[3], parameters[0], parameters[1], parameters[2],
           //	   parameters[4], parameters[5], parameters[6]);
-        }
+        } // endfor: iteration
         // printf("mapping optimization time %f \n", t_opt.toc());
-      }
+      } // endif: map is large enough
       else
       {
         ROS_WARN("time Map corner and surf num are not enough");
@@ -736,11 +745,17 @@ void process( )
         int cubeK = int((pointSel.z + 25.0) / 50.0) + laserCloudCenDepth;
 
         if (pointSel.x + 25.0 < 0)
+        {
           cubeI--;
+        }
         if (pointSel.y + 25.0 < 0)
+        {
           cubeJ--;
+        }
         if (pointSel.z + 25.0 < 0)
+        {
           cubeK--;
+        }
 
         if (cubeI >= 0 && cubeI < laserCloudWidth && cubeJ >= 0 && cubeJ < laserCloudHeight && cubeK >= 0 && cubeK < laserCloudDepth)
         {
@@ -758,11 +773,17 @@ void process( )
         int cubeK = int((pointSel.z + 25.0) / 50.0) + laserCloudCenDepth;
 
         if (pointSel.x + 25.0 < 0)
+        {
           cubeI--;
+        }
         if (pointSel.y + 25.0 < 0)
+        {
           cubeJ--;
+        }
         if (pointSel.z + 25.0 < 0)
+        {
           cubeK--;
+        }
 
         if (cubeI >= 0 && cubeI < laserCloudWidth && cubeJ >= 0 && cubeJ < laserCloudHeight && cubeK >= 0 && cubeK < laserCloudDepth)
         {
@@ -890,8 +911,8 @@ void process( )
     }
     std::chrono::milliseconds dura(2);
     std::this_thread::sleep_for(dura);
-  }
-}
+  } // endwhile: 1
+} // end: process
 
 int main(int argc, char **argv)
 {

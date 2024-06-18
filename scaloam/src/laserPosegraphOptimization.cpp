@@ -175,7 +175,7 @@ void saveOptimizedVerticesKITTIformat(gtsam::Values _estimates, std::string _fil
   for (const auto &key_value : _estimates)
   {
     auto p = dynamic_cast<const GenericValue<Pose3> *>(&key_value.value);
-    if (!p) continue;
+    if (!p) { continue; }
 
     const Pose3 &pose = p->value( );
 
@@ -404,7 +404,8 @@ pcl::PointCloud<PointType>::Ptr transformPointCloud(pcl::PointCloud<PointType>::
   return cloudOut;
 } // transformPointCloud
 
-void loopFindNearKeyframesCloud(pcl::PointCloud<PointType>::Ptr &nearKeyframes, const int &key, const int &submap_size, const int &root_idx)
+void loopFindNearKeyframesCloud(pcl::PointCloud<PointType>::Ptr &nearKeyframes, const int &key,
+                                const int &submap_size, const int &root_idx)
 {
   // extract and stacking near keyframes (in global coord)
   nearKeyframes->clear( );
@@ -412,7 +413,9 @@ void loopFindNearKeyframesCloud(pcl::PointCloud<PointType>::Ptr &nearKeyframes, 
   {
     int keyNear = key + i;
     if (keyNear < 0 || keyNear >= int(keyframeLaserClouds.size( )))
+    {
       continue;
+    }
 
     mKF.lock( );
     *nearKeyframes += *local2global(keyframeLaserClouds[keyNear], keyframePosesUpdated[root_idx]);
@@ -420,7 +423,9 @@ void loopFindNearKeyframesCloud(pcl::PointCloud<PointType>::Ptr &nearKeyframes, 
   }
 
   if (nearKeyframes->empty( ))
+  {
     return;
+  }
 
   // downsample near keyframes
   pcl::PointCloud<PointType>::Ptr cloud_temp(new pcl::PointCloud<PointType>( ));
@@ -429,7 +434,7 @@ void loopFindNearKeyframesCloud(pcl::PointCloud<PointType>::Ptr &nearKeyframes, 
   *nearKeyframes = *cloud_temp;
 } // loopFindNearKeyframesCloud
 
-
+// registrate by ICP
 std::optional<gtsam::Pose3> doICPVirtualRelative(int _loop_kf_idx, int _curr_kf_idx)
 {
   // parse pointclouds
@@ -496,8 +501,11 @@ void process_pg( )
       // pop and check keyframe is or not
       //
       mBuf.lock( );
-      while (!odometryBuf.empty( ) && odometryBuf.front( )->header.stamp.toSec( ) < fullResBuf.front( )->header.stamp.toSec( ))
+      while (!odometryBuf.empty( )
+             && odometryBuf.front( )->header.stamp.toSec( ) < fullResBuf.front( )->header.stamp.toSec( ))
+      {
         odometryBuf.pop( );
+      }
       if (odometryBuf.empty( ))
       {
         mBuf.unlock( );
@@ -560,7 +568,9 @@ void process_pg( )
       }
 
       if (!isNowKeyFrame)
+      {
         continue;
+      }
 
       if (!gpsOffsetInitialized)
       {
@@ -636,7 +646,9 @@ void process_pg( )
         mtxPosegraph.unlock( );
 
         if (curr_node_idx % 100 == 0)
+        {
           cout << "posegraph odom node " << curr_node_idx << " added." << endl;
+        }
       }
       // if want to print the current graph, use gtSAMgraph.print("\nFactor Graph:\n");
 
@@ -644,7 +656,7 @@ void process_pg( )
       std::string curr_node_idx_str = padZeros(curr_node_idx);
       pcl::io::savePCDFileBinary(pgScansDirectory + curr_node_idx_str + ".pcd", *thisKeyFrame); // scan
       pgTimeSaveStream << timeLaser << std::endl; // path
-    }
+    } // endwhile: !empty
 
     // ps.
     // scan context detector is running in another thread (in constant Hz, e.g., 1 Hz)
@@ -653,13 +665,15 @@ void process_pg( )
     // wait (must required for running the while loop)
     std::chrono::milliseconds dura(2);
     std::this_thread::sleep_for(dura);
-  }
+  } // endwhile: 1
 } // process_pg
 
 void performSCLoopClosure(void)
 {
   if (int(keyframePoses.size( )) < scManager.NUM_EXCLUDE_RECENT) // do not try too early
+  {
     return;
+  }
 
   auto detectResult           = scManager.detectLoopClosureID( ); // first: nn index, second: yaw diff
   int SCclosestHistoryFrameID = detectResult.first;
@@ -715,12 +729,12 @@ void process_icp(void)
         // runISAM2opt();
         mtxPosegraph.unlock( );
       }
-    }
+    } // endwhile: !empty
 
     // wait (must required for running the while loop)
     std::chrono::milliseconds dura(2);
     std::this_thread::sleep_for(dura);
-  }
+  } // endwhile: 1
 } // process_icp
 
 void process_viz_path(void)

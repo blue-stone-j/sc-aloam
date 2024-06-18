@@ -98,8 +98,13 @@ void removeClosedPointCloud(const pcl::PointCloud<PointT> &cloud_in,
 
   for (size_t i = 0; i < cloud_in.points.size( ); ++i)
   {
-    if (cloud_in.points[i].x * cloud_in.points[i].x + cloud_in.points[i].y * cloud_in.points[i].y + cloud_in.points[i].z * cloud_in.points[i].z < thres * thres)
+    if (cloud_in.points[i].x * cloud_in.points[i].x
+            + cloud_in.points[i].y * cloud_in.points[i].y
+            + cloud_in.points[i].z * cloud_in.points[i].z
+        < thres * thres)
+    {
       continue;
+    }
     cloud_out.points[j] = cloud_in.points[i];
     j++;
   }
@@ -123,7 +128,9 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsg)
       systemInited = true;
     }
     else
+    {
       return;
+    }
   }
 
   TicToc t_whole;
@@ -141,9 +148,7 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsg)
 
   int cloudSize  = laserCloudIn.points.size( );
   float startOri = -atan2(laserCloudIn.points[0].y, laserCloudIn.points[0].x);
-  float endOri   = -atan2(laserCloudIn.points[cloudSize - 1].y,
-                          laserCloudIn.points[cloudSize - 1].x)
-                 + 2 * M_PI;
+  float endOri   = -atan2(laserCloudIn.points[cloudSize - 1].y, laserCloudIn.points[cloudSize - 1].x) + 2 * M_PI;
 
   if (endOri - startOri > 3 * M_PI)
   {
@@ -190,9 +195,13 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsg)
     else if (LIDAR_TYPE == "HDL64" && N_SCANS == 64)
     {
       if (angle >= -8.83)
+      {
         scanID = int((2 - angle) * 3.0 + 0.5);
+      }
       else
+      {
         scanID = N_SCANS / 2 + int((-8.83 - angle) * 2.0 + 0.5);
+      }
 
       // use [0 50]  > 50 remove outlies
       if (angle > 2 || angle < -24.33 || scanID > 50 || scanID < 0)
@@ -204,7 +213,8 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsg)
     // Ouster OS1-64 (e.g., MulRan)
     else if (LIDAR_TYPE == "OS1-64" && N_SCANS == 64)
     {
-      scanID = int((angle + 22.5) / 2 + 0.5); // ouster os1-64 vfov is [-22.5, 22.5] see https://ouster.com/products/os1-lidar-sensor/
+      // ouster os1-64 vfov is [-22.5, 22.5] see https://ouster.com/products/os1-lidar-sensor/
+      scanID = int((angle + 22.5) / 2 + 0.5);
       if (scanID > (N_SCANS - 1) || scanID < 0)
       {
         count--;
@@ -268,9 +278,39 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsg)
 
   for (int i = 5; i < cloudSize - 5; i++)
   {
-    float diffX = laserCloud->points[i - 5].x + laserCloud->points[i - 4].x + laserCloud->points[i - 3].x + laserCloud->points[i - 2].x + laserCloud->points[i - 1].x - 10 * laserCloud->points[i].x + laserCloud->points[i + 1].x + laserCloud->points[i + 2].x + laserCloud->points[i + 3].x + laserCloud->points[i + 4].x + laserCloud->points[i + 5].x;
-    float diffY = laserCloud->points[i - 5].y + laserCloud->points[i - 4].y + laserCloud->points[i - 3].y + laserCloud->points[i - 2].y + laserCloud->points[i - 1].y - 10 * laserCloud->points[i].y + laserCloud->points[i + 1].y + laserCloud->points[i + 2].y + laserCloud->points[i + 3].y + laserCloud->points[i + 4].y + laserCloud->points[i + 5].y;
-    float diffZ = laserCloud->points[i - 5].z + laserCloud->points[i - 4].z + laserCloud->points[i - 3].z + laserCloud->points[i - 2].z + laserCloud->points[i - 1].z - 10 * laserCloud->points[i].z + laserCloud->points[i + 1].z + laserCloud->points[i + 2].z + laserCloud->points[i + 3].z + laserCloud->points[i + 4].z + laserCloud->points[i + 5].z;
+    float diffX = laserCloud->points[i - 5].x
+                  + laserCloud->points[i - 4].x
+                  + laserCloud->points[i - 3].x
+                  + laserCloud->points[i - 2].x
+                  + laserCloud->points[i - 1].x
+                  - 10 * laserCloud->points[i].x
+                  + laserCloud->points[i + 1].x
+                  + laserCloud->points[i + 2].x
+                  + laserCloud->points[i + 3].x
+                  + laserCloud->points[i + 4].x
+                  + laserCloud->points[i + 5].x;
+    float diffY = laserCloud->points[i - 5].y
+                  + laserCloud->points[i - 4].y
+                  + laserCloud->points[i - 3].y
+                  + laserCloud->points[i - 2].y
+                  + laserCloud->points[i - 1].y
+                  - 10 * laserCloud->points[i].y
+                  + laserCloud->points[i + 1].y
+                  + laserCloud->points[i + 2].y
+                  + laserCloud->points[i + 3].y
+                  + laserCloud->points[i + 4].y
+                  + laserCloud->points[i + 5].y;
+    float diffZ = laserCloud->points[i - 5].z
+                  + laserCloud->points[i - 4].z
+                  + laserCloud->points[i - 3].z
+                  + laserCloud->points[i - 2].z
+                  + laserCloud->points[i - 1].z
+                  - 10 * laserCloud->points[i].z
+                  + laserCloud->points[i + 1].z
+                  + laserCloud->points[i + 2].z
+                  + laserCloud->points[i + 3].z
+                  + laserCloud->points[i + 4].z
+                  + laserCloud->points[i + 5].z;
 
     cloudCurvature[i]      = diffX * diffX + diffY * diffY + diffZ * diffZ;
     cloudSortInd[i]        = i;
@@ -290,7 +330,9 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsg)
   for (int i = 0; i < N_SCANS; i++)
   {
     if (scanEndInd[i] - scanStartInd[i] < 6)
+    {
       continue;
+    }
     pcl::PointCloud<PointType>::Ptr surfPointsLessFlatScan(new pcl::PointCloud<PointType>);
     for (int j = 0; j < 6; j++)
     {

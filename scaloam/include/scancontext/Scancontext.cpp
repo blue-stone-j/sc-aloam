@@ -84,7 +84,9 @@ double SCManager::distDirectSC(MatrixXd &_sc1, MatrixXd &_sc2)
     VectorXd col_sc2 = _sc2.col(col_idx);
 
     if ((col_sc1.norm( ) == 0) | (col_sc2.norm( ) == 0))
+    {
       continue; // don't count this sector pair.
+    }
 
     double sector_similarity = col_sc1.dot(col_sc2) / (col_sc1.norm( ) * col_sc2.norm( ));
 
@@ -104,12 +106,12 @@ int SCManager::fastAlignUsingVkey(MatrixXd &_vkey1, MatrixXd &_vkey2)
   double min_veky_diff_norm = 10000000;
   for (int shift_idx = 0; shift_idx < _vkey1.cols( ); shift_idx++)
   {
-    MatrixXd vkey2_shifted = circshift(_vkey2, shift_idx);
+    MatrixXd vkey2_shifted = circshift(_vkey2, shift_idx); // 矩阵的列，循环右移shift个单位
 
-    MatrixXd vkey_diff = _vkey1 - vkey2_shifted;
+    MatrixXd vkey_diff = _vkey1 - vkey2_shifted; // 直接相减，sector key是1xN的矩阵
 
     double cur_diff_norm = vkey_diff.norm( );
-    if (cur_diff_norm < min_veky_diff_norm)
+    if (cur_diff_norm < min_veky_diff_norm) // 记录距离最小时对应的循环偏移量
     {
       argmin_vkey_shift  = shift_idx;
       min_veky_diff_norm = cur_diff_norm;
@@ -124,12 +126,15 @@ int SCManager::fastAlignUsingVkey(MatrixXd &_vkey1, MatrixXd &_vkey2)
 std::pair<double, int> SCManager::distanceBtnScanContext(MatrixXd &_sc1, MatrixXd &_sc2)
 {
   // 1. fast align using variant key (not in original IROS18)
-  MatrixXd vkey_sc1     = makeSectorkeyFromScancontext(_sc1);
-  MatrixXd vkey_sc2     = makeSectorkeyFromScancontext(_sc2);
+  // 计算sector Key,也就是sector最大高度均值组成的数组，1xN
+  MatrixXd vkey_sc1 = makeSectorkeyFromScancontext(_sc1);
+  MatrixXd vkey_sc2 = makeSectorkeyFromScancontext(_sc2);
+  // 这里将_vkey2循环右移，然后跟_vkey1作比较，找到一个最相似（二者做差最小）的时候，记下循环右移的量
   int argmin_vkey_shift = fastAlignUsingVkey(vkey_sc1, vkey_sc2);
 
   const int SEARCH_RADIUS = round(0.5 * SEARCH_RATIO * _sc1.cols( )); // a half of search range
   std::vector<int> shift_idx_search_space{argmin_vkey_shift};
+  // 上面用sector key匹配，找到一个初始的偏移量，但肯定不是准确的，再在这个偏移量左右扩展一下搜索空间
   for (int ii = 1; ii < SEARCH_RADIUS + 1; ii++)
   {
     shift_idx_search_space.push_back((argmin_vkey_shift + ii + _sc1.cols( )) % _sc1.cols( ));
@@ -142,15 +147,17 @@ std::pair<double, int> SCManager::distanceBtnScanContext(MatrixXd &_sc1, MatrixX
   double min_sc_dist = 10000000;
   for (int num_shift : shift_idx_search_space)
   {
+    // 把scan context循环右移一下
     MatrixXd sc2_shifted = circshift(_sc2, num_shift);
-    double cur_sc_dist   = distDirectSC(_sc1, sc2_shifted);
+    // 计算两个scan context之间的距离
+    double cur_sc_dist = distDirectSC(_sc1, sc2_shifted);
     if (cur_sc_dist < min_sc_dist)
     {
       argmin_shift = num_shift;
       min_sc_dist  = cur_sc_dist;
     }
   }
-
+  // 最小scan context距离，偏移量
   return make_pair(min_sc_dist, argmin_shift);
 
 } // distanceBtnScanContext
@@ -158,13 +165,14 @@ std::pair<double, int> SCManager::distanceBtnScanContext(MatrixXd &_sc1, MatrixX
 
 MatrixXd SCManager::makeScancontext(pcl::PointCloud<SCPointType> &_scan_down)
 {
-  TicTocV2 t_making_desc;
+  TicTocV2 t_making_desc; // time to make sc
 
-  int num_pts_scan_down = _scan_down.points.size( );
+  int num_pts_scan_down = _scan_down.points.size( ); // 激光点数量
 
   // main
   const int NO_POINT = -1000;
-  MatrixXd desc      = NO_POINT * MatrixXd::Ones(PC_NUM_RING, PC_NUM_SECTOR);
+  // scan context是一个二维矩阵
+  MatrixXd desc = NO_POINT * MatrixXd::Ones(PC_NUM_RING, PC_NUM_SECTOR);
 
   SCPointType pt;
   float azim_angle, azim_range; // wihtin 2d plane
@@ -177,14 +185,15 @@ MatrixXd SCManager::makeScancontext(pcl::PointCloud<SCPointType> &_scan_down)
 
     // xyz to ring, sector
     azim_range = sqrt(pt.x * pt.x + pt.y * pt.y);
-    azim_angle = xy2theta(pt.x, pt.y);
+    azim_angle = xy2theta(pt.x, pt.y); // angle 0~360°
 
-    // if range is out of roi, pass
+    // if range is out of roi(region of interest), pass
     if (azim_range > PC_MAX_RADIUS)
     {
       continue;
     }
 
+    // 计算这个点落在哪个bin里面，下标从1开始数
     ring_idx  = std::max(std::min(PC_NUM_RING, int(ceil((azim_range / PC_MAX_RADIUS) * PC_NUM_RING))), 1);
     sctor_idx = std::max(std::min(PC_NUM_SECTOR, int(ceil((azim_angle / 360.0) * PC_NUM_SECTOR))), 1);
 
@@ -193,7 +202,7 @@ MatrixXd SCManager::makeScancontext(pcl::PointCloud<SCPointType> &_scan_down)
     {
       desc(ring_idx - 1, sctor_idx - 1) = pt.z; // update for taking maximum value at that bin
     }
-  }
+  } // endfor: have processed all points
 
   // reset no points to zero (for cosine dist later)
   for (int row_idx = 0; row_idx < desc.rows( ); row_idx++)
@@ -261,16 +270,21 @@ void SCManager::saveScancontextAndKeys(Eigen::MatrixXd _scd)
   polarcontext_invkeys_.push_back(ringkey);
   polarcontext_vkeys_.push_back(sectorkey);
   polarcontext_invkeys_mat_.push_back(polarcontext_invkey_vec);
-} // SCManager::makeAndSaveScancontextAndKeys
+} // SCManager::saveScancontextAndKeys
 
 
 void SCManager::makeAndSaveScancontextAndKeys(pcl::PointCloud<SCPointType> &_scan_down)
 {
-  Eigen::MatrixXd sc                         = makeScancontext(_scan_down); // v1
-  Eigen::MatrixXd ringkey                    = makeRingkeyFromScancontext(sc);
-  Eigen::MatrixXd sectorkey                  = makeSectorkeyFromScancontext(sc);
+  // scancontext 带高度的俯视图
+  Eigen::MatrixXd sc = makeScancontext(_scan_down);
+  // 每个环ring的最大高度平均值
+  Eigen::MatrixXd ringkey = makeRingkeyFromScancontext(sc);
+  // 每个轴向sector的最大高度平均值
+  Eigen::MatrixXd sectorkey = makeSectorkeyFromScancontext(sc);
+  // 作为scancontext的key, 在历史帧里面通过找相同的key来得到候选匹配, 然后计算scan context的距离
   std::vector<float> polarcontext_invkey_vec = eig2stdvec(ringkey);
 
+  // 历史数据，全部存起来，供后面查找匹配
   polarcontexts_.push_back(sc);
   polarcontext_invkeys_.push_back(ringkey);
   polarcontext_vkeys_.push_back(sectorkey);
@@ -287,7 +301,8 @@ void SCManager::setMaximumRadius(double _max_r)
   PC_MAX_RADIUS = _max_r;
 } // SCManager::setMaximumRadius
 
-std::pair<int, float> SCManager::detectLoopClosureIDBetweenSession(std::vector<float> &_curr_key, Eigen::MatrixXd &_curr_desc)
+std::pair<int, float> SCManager::detectLoopClosureIDBetweenSession(std::vector<float> &_curr_key,
+                                                                   Eigen::MatrixXd &_curr_desc)
 {
   int loop_id{-1}; // init with -1, -1 means no loop (== LeGO-LOAM's variable "closestHistoryFrameID")
 
@@ -301,7 +316,8 @@ std::pair<int, float> SCManager::detectLoopClosureIDBetweenSession(std::vector<f
     polarcontext_invkeys_to_search_.assign(polarcontext_invkeys_mat_.begin( ), polarcontext_invkeys_mat_.end( ));
 
     polarcontext_tree_batch_.reset( );
-    polarcontext_tree_batch_ = std::make_unique<InvKeyTree>(PC_NUM_RING /* dim */, polarcontext_invkeys_to_search_, 10 /* max leaf */);
+    polarcontext_tree_batch_ = std::make_unique<InvKeyTree>(PC_NUM_RING /* dim */,
+                                                            polarcontext_invkeys_to_search_, 10 /* max leaf */);
 
     is_tree_batch_made = true; // for running this block only once
   }
@@ -316,7 +332,8 @@ std::pair<int, float> SCManager::detectLoopClosureIDBetweenSession(std::vector<f
 
   nanoflann::KNNResultSet<float> knnsearch_result(NUM_CANDIDATES_FROM_TREE);
   knnsearch_result.init(&candidate_indexes[0], &out_dists_sqr[0]);
-  polarcontext_tree_batch_->index->findNeighbors(knnsearch_result, &curr_key[0] /* query */, nanoflann::SearchParams(10)); // error here
+  polarcontext_tree_batch_->index->findNeighbors(knnsearch_result, &curr_key[0] /* query */,
+                                                 nanoflann::SearchParams(10));
 
   // step 2: pairwise distance (find optimal columnwise best-fit using cosine distance)
   TicTocV2 t_calc_dist;
