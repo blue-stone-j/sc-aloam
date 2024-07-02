@@ -65,7 +65,7 @@ void ISCGenerationClass::print_param( )
   std::cout << "maximum distance:\t" << max_dis << std::endl;
 }
 
-// 构建当前帧的intensity scan context
+// 构建当前帧的 intensity scan context
 ISCDescriptor ISCGenerationClass::calculate_isc(const pcl::PointCloud<pcl::PointXYZI>::Ptr filtered_pointcloud)
 {
   ISCDescriptor isc = cv::Mat::zeros(cv::Size(sectors, rings), CV_8U);
@@ -73,23 +73,33 @@ ISCDescriptor ISCGenerationClass::calculate_isc(const pcl::PointCloud<pcl::Point
   for (int i = 0; i < (int)filtered_pointcloud->points.size( ); i++)
   {
     ROS_WARN_ONCE("intensity is %f, if intensity showed here is integer format between 1-255, please uncomment #define INTEGER_INTENSITY in iscGenerationClass.cpp and recompile", (double)filtered_pointcloud->points[i].intensity);
-    double distance = std::sqrt(filtered_pointcloud->points[i].x * filtered_pointcloud->points[i].x + filtered_pointcloud->points[i].y * filtered_pointcloud->points[i].y);
+    double distance = std::sqrt(filtered_pointcloud->points[i].x * filtered_pointcloud->points[i].x
+                                + filtered_pointcloud->points[i].y * filtered_pointcloud->points[i].y);
     if (distance >= max_dis)
+    {
       continue;
+    }
     double angle  = M_PI + std::atan2(filtered_pointcloud->points[i].y, filtered_pointcloud->points[i].x);
     int ring_id   = std::floor(distance / ring_step);
     int sector_id = std::floor(angle / sector_step);
     if (ring_id >= rings)
+    {
       continue;
+    }
     if (sector_id >= sectors)
+    {
       continue;
+    }
 #ifndef INTEGER_INTENSITY
     int intensity_temp = (int)(255 * filtered_pointcloud->points[i].intensity);
 #else
     int intensity_temp = (int)(filtered_pointcloud->points[i].intensity);
 #endif
-    if (isc.at<unsigned char>(ring_id, sector_id) < intensity_temp) // ISC的每个像素是：属于这个扇形的points的最大强度值
+    // ISC的每个像素是：属于这个扇形的points的最大强度值
+    if (isc.at<unsigned char>(ring_id, sector_id) < intensity_temp)
+    {
       isc.at<unsigned char>(ring_id, sector_id) = intensity_temp;
+    }
   }
 
   return isc;
@@ -115,7 +125,8 @@ ISCDescriptor ISCGenerationClass::getLastISCRGB(void)
   return isc_color;
 }
 
-void ISCGenerationClass::loopDetection(const pcl::PointCloud<pcl::PointXYZI>::Ptr &current_pc, Eigen::Isometry3d &odom)
+void ISCGenerationClass::loopDetection(const pcl::PointCloud<pcl::PointXYZI>::Ptr &current_pc,
+                                       Eigen::Isometry3d &odom)
 {
   pcl::PointCloud<pcl::PointXYZI>::Ptr pc_filtered(new pcl::PointCloud<pcl::PointXYZI>( ));
 
@@ -138,11 +149,12 @@ void ISCGenerationClass::loopDetection(const pcl::PointCloud<pcl::PointXYZI>::Pt
   isc_arr.push_back(desc); // 所有帧的isc
 
   current_frame_id = pos_arr.size( ) - 1;
-  matched_frame_id.clear( ); // 只有一个内容，或者没有
+  matched_frame_id.clear( );
 
   // search for the near neibourgh pos
   int best_matched_id = 0;
   double best_score   = 0.0;
+  // 找到当前帧与历史所有帧中最相似的那个id号
   for (int i = 0; i < (int)pos_arr.size( ); i++)
   {
     double delta_travel_distance = travel_distance_arr.back( ) - travel_distance_arr[i];
@@ -152,7 +164,7 @@ void ISCGenerationClass::loopDetection(const pcl::PointCloud<pcl::PointXYZI>::Pt
       double geo_score   = 0;
       double inten_score = 0;
       if (is_loop_pair(desc, isc_arr[i], geo_score, inten_score))
-      { // 找到当前帧与历史所有帧中最相似的那个id号
+      {
         if (geo_score + inten_score > best_score)
         {
           best_score      = geo_score + inten_score;
@@ -168,7 +180,8 @@ void ISCGenerationClass::loopDetection(const pcl::PointCloud<pcl::PointXYZI>::Pt
   }
 }
 
-bool ISCGenerationClass::is_loop_pair(ISCDescriptor &desc1, ISCDescriptor &desc2, double &geo_score, double &inten_score)
+bool ISCGenerationClass::is_loop_pair(ISCDescriptor &desc1, ISCDescriptor &desc2,
+                                      double &geo_score, double &inten_score)
 {
   int angle = 0;
   geo_score = calculate_geometry_dis(desc1, desc2, angle);
@@ -187,19 +200,23 @@ bool ISCGenerationClass::is_loop_pair(ISCDescriptor &desc1, ISCDescriptor &desc2
 // desc1: 当前帧isc
 // desc2: 历史帧isc
 // angle: 历史帧水平旋转量
-double ISCGenerationClass::calculate_geometry_dis(const ISCDescriptor &desc1, const ISCDescriptor &desc2, int &angle)
+double ISCGenerationClass::calculate_geometry_dis(const ISCDescriptor &desc1,
+                                                  const ISCDescriptor &desc2,
+                                                  int &angle)
 {
   double similarity = 0.0;
 
+  // i is isc列平移量
   for (int i = 0; i < sectors; i++)
-  { // isc列平移量
+  {
     int match_count = 0;
     for (int p = 0; p < sectors; p++)
     {
       int new_col = p + i >= sectors ? p + i - sectors : p + i;
       for (int q = 0; q < rings; q++)
       {
-        if ((desc1.at<unsigned char>(q, p) == true && desc2.at<unsigned char>(q, new_col) == true) || (desc1.at<unsigned char>(q, p) == false && desc2.at<unsigned char>(q, new_col) == false))
+        if ((desc1.at<unsigned char>(q, p) == true && desc2.at<unsigned char>(q, new_col) == true)
+            || (desc1.at<unsigned char>(q, p) == false && desc2.at<unsigned char>(q, new_col) == false))
         {
           match_count++; // 异或运算中，个数： [null, null] +  [not null, not null]
         } // 扇形内有点为true， 否则为false
@@ -215,7 +232,9 @@ double ISCGenerationClass::calculate_geometry_dis(const ISCDescriptor &desc1, co
 }
 
 
-double ISCGenerationClass::calculate_intensity_dis(const ISCDescriptor &desc1, const ISCDescriptor &desc2, int &angle)
+double ISCGenerationClass::calculate_intensity_dis(const ISCDescriptor &desc1,
+                                                   const ISCDescriptor &desc2,
+                                                   int &angle)
 {
   double difference = 1.0;
   double angle_temp = angle;
@@ -227,18 +246,25 @@ double ISCGenerationClass::calculate_intensity_dis(const ISCDescriptor &desc1, c
     {
       int new_col = p + i;
       if (new_col >= sectors)
+      {
         new_col = new_col - sectors;
+      }
       if (new_col < 0)
+      {
         new_col = new_col + sectors;
+      }
       for (int q = 0; q < rings; q++)
       {
-        match_count += abs(desc1.at<unsigned char>(q, p) - desc2.at<unsigned char>(q, new_col)); // 取fab(对应扇形强度值之差)，和论文不一致
+        // 取fab(对应扇形强度值之差)，和论文不一致
+        match_count += abs(desc1.at<unsigned char>(q, p) - desc2.at<unsigned char>(q, new_col));
         total_points++;
       }
     }
     double diff_temp = ((double)match_count) / (sectors * rings * 255);
     if (diff_temp < difference)
+    {
       difference = diff_temp;
+    }
   }
   return 1 - difference;
 }

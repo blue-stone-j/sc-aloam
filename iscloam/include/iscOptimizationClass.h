@@ -44,7 +44,7 @@
 // local lib
 #include "lidarOptimization.h"
 
-#define LOOPCLOSURE_THRESHOLD 41
+#define LOOPCLOSURE_THRESHOLD 41 // match score
 
 // stop loop check for the next N frames if loop is identified
 #define STOP_LOOP_CHECK_COUNTER 40
@@ -73,8 +73,8 @@ class ISCOptimizationClass
   pcl::PointCloud<pcl::PointXYZI>::Ptr map               = pcl::PointCloud<pcl::PointXYZI>::Ptr(new pcl::PointCloud<pcl::PointXYZI>( ));
 
  private:
-  std::vector<gtsam::Pose3> pose_optimized_arr;
-  std::vector<gtsam::Pose3> odom_original_arr;
+  std::vector<gtsam::Pose3> pose_optimized_arr; //???
+  std::vector<gtsam::Pose3> odom_original_arr; //???
   gtsam::Pose3 last_pose3;
 
   gtsam::NonlinearFactorGraph graph;
@@ -96,7 +96,7 @@ class ISCOptimizationClass
 
   void globalOptimization(void);
 
-  bool geometryConsistencyVerification(int current_id, int matched_id, Eigen::Isometry3d &transform);
+  bool geometryConsistencyVerification(int current_id, int matched_id, Eigen::Isometry3d &transform); //???
 
   bool updateStates(gtsam::Values &result, int matched_id, int current_id);
 

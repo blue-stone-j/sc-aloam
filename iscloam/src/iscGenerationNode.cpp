@@ -87,8 +87,13 @@ void loop_closure_detection( )
       pcl::fromROSMsg(*pointCloudBuf.front( ), *pointcloud_in); // 每一帧的点云
       ros::Time pointcloud_time = (pointCloudBuf.front( ))->header.stamp;
       Eigen::Isometry3d odom_in = Eigen::Isometry3d::Identity( ); // 每一帧位姿
-      odom_in.rotate(Eigen::Quaterniond(odometryBuf.front( )->pose.pose.orientation.w, odometryBuf.front( )->pose.pose.orientation.x, odometryBuf.front( )->pose.pose.orientation.y, odometryBuf.front( )->pose.pose.orientation.z));
-      odom_in.pretranslate(Eigen::Vector3d(odometryBuf.front( )->pose.pose.position.x, odometryBuf.front( )->pose.pose.position.y, odometryBuf.front( )->pose.pose.position.z));
+      odom_in.rotate(Eigen::Quaterniond(odometryBuf.front( )->pose.pose.orientation.w,
+                                        odometryBuf.front( )->pose.pose.orientation.x,
+                                        odometryBuf.front( )->pose.pose.orientation.y,
+                                        odometryBuf.front( )->pose.pose.orientation.z));
+      odom_in.pretranslate(Eigen::Vector3d(odometryBuf.front( )->pose.pose.position.x,
+                                           odometryBuf.front( )->pose.pose.position.y,
+                                           odometryBuf.front( )->pose.pose.position.z));
       odometryBuf.pop( );
       pointCloudBuf.pop( );
       mutex_lock.unlock( );
@@ -112,7 +117,7 @@ void loop_closure_detection( )
         loop.matched_id.push_back(iscGeneration.matched_frame_id[i]);
       }
       loop_info_pub.publish(loop);
-    }
+    } // endif: !empty
     // sleep 2 ms every time
     std::chrono::milliseconds dura(2);
     std::this_thread::sleep_for(dura);

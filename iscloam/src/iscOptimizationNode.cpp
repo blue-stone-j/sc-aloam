@@ -61,9 +61,15 @@ void odomCallback(const nav_msgs::Odometry::ConstPtr &msg) // 当前帧在map下
 
   // high frequence publish
   Eigen::Isometry3d odom_to_base = Eigen::Isometry3d::Identity( );
-  odom_to_base.rotate(Eigen::Quaterniond(msg->pose.pose.orientation.w, msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z));
-  odom_to_base.pretranslate(Eigen::Vector3d(msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z));
-  Eigen::Isometry3d w_curr = w_odom_curr * odom_to_base; // w_odom_curr: 由于加进来的闭环约束，导致对当前帧的correction delta transform
+  odom_to_base.rotate(Eigen::Quaterniond(msg->pose.pose.orientation.w,
+                                         msg->pose.pose.orientation.x,
+                                         msg->pose.pose.orientation.y,
+                                         msg->pose.pose.orientation.z));
+  odom_to_base.pretranslate(Eigen::Vector3d(msg->pose.pose.position.x,
+                                            msg->pose.pose.position.y,
+                                            msg->pose.pose.position.z));
+  // w_odom_curr: 由于加进来的闭环约束，导致对当前帧的correction delta transform
+  Eigen::Isometry3d w_curr = w_odom_curr * odom_to_base;
 
   Eigen::Quaterniond q_temp(w_curr.rotation( )); // 来一帧位姿，校准一次，发布
 
@@ -241,7 +247,7 @@ void global_optimization( )
       PointsMsg2.header.frame_id = "/map";
       map_pub.publish(PointsMsg3);
       */
-    }
+    } // endif: !empty
     // sleep 2 ms every time
     std::chrono::milliseconds dura(2);
     std::this_thread::sleep_for(dura);

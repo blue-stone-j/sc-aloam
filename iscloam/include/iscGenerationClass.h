@@ -57,8 +57,8 @@ class ISCGenerationClass
   ISCGenerationClass( );
   void init_param(int rings_in, int sectors_in, double max_dis_in);
 
-  ISCDescriptor getLastISCMONO(void);
-  ISCDescriptor getLastISCRGB(void);
+  ISCDescriptor getLastISCMONO(void); //???
+  ISCDescriptor getLastISCRGB(void); //???
   void loopDetection(const pcl::PointCloud<pcl::PointXYZI>::Ptr &current_pc, Eigen::Isometry3d &odom);
 
   int current_frame_id;
@@ -75,10 +75,10 @@ class ISCGenerationClass
 
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr current_point_cloud;
-  pcl::PointCloud<pcl::PointXYZI>::Ptr test_pc;
+  pcl::PointCloud<pcl::PointXYZI>::Ptr test_pc; //???
 
-  std::vector<Eigen::Vector3d> pos_arr;
-  std::vector<double> travel_distance_arr;
+  std::vector<Eigen::Vector3d> pos_arr; // history poses
+  std::vector<double> travel_distance_arr; // travel distance from beginning to this cloud
   std::vector<ISCDescriptor> isc_arr;
 
   void init_color(void);
