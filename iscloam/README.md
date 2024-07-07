@@ -1,7 +1,6 @@
-# ISCLOAM 
-### Intensity Scan Context based Full SLAM Implementation (ISC-LOAM) 
-
-This work is 3D lidar based Simultaneous Localization And Mapping (SLAM), including both front-end and back-end SLAM, at 20Hz. 
+# SC-LeGO-LOAM
+## Real-time LiDAR SLAM: Scan Context (18 IROS) + LeGO-LOAM (18 IROS)
+This repository is an example use-case of <a href="https://github.com/irapkaist/scancontext/tree/master/cpp"> Scan Context C++ </a>, the LiDAR place recognition method, for LiDAR SLAM applications.  
 
 **Author:** [Wang Han](http://wanghan.pro), Nanyang Technological University, Singapore
 
