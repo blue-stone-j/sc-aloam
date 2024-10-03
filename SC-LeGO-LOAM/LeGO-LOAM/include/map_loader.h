@@ -14,15 +14,16 @@
 
 #include <vector>
 
-class MapLoader {
-public:
-    ros::Publisher pc_map_pub_;
-    std::vector<std::string> file_list_;
+class MapLoader
+{
+ public:
+  ros::Publisher pc_map_pub_;
+  std::vector<std::string> file_list_;
 
-    MapLoader(ros::NodeHandle &nh);
+  MapLoader(ros::NodeHandle &nh);
 
-private:
-    sensor_msgs::PointCloud2 CreatePcd();
-}; //MapLoader
+ private:
+  sensor_msgs::PointCloud2 CreatePcd();
+}; // MapLoader
 
 #endif

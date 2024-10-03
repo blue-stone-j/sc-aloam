@@ -7,241 +7,242 @@
 
 #include "lego_loam/utility.h"
 
-namespace lego_loam{
-    class FeatureAssociation {
+namespace lego_loam
+{
+class FeatureAssociation
+{
+ public:
+  inline double rad2deg(double radians)
+  {
+    return radians * 180.0 / M_PI;
+  }
 
-    public:
-        inline double rad2deg(double radians) {
-            return radians * 180.0 / M_PI;
-        }
+  inline double deg2rad(double degrees)
+  {
+    return degrees * M_PI / 180.0;
+  }
 
-        inline double deg2rad(double degrees) {
-            return degrees * M_PI / 180.0;
-        }
+  FeatureAssociation();
+  void InitParams();
 
-        FeatureAssociation();
-        void InitParams();
+  //  主程序入口
+  void runFeatureAssociation();
 
-        //  主程序入口
-        void runFeatureAssociation();
+  void initializationValue();
 
-        void initializationValue();
+  void updateImuRollPitchYawStartSinCos();
 
-        void updateImuRollPitchYawStartSinCos();
+  void ShiftToStartIMU(float pointTime);
 
-        void ShiftToStartIMU(float pointTime);
+  void VeloToStartIMU();
 
-        void VeloToStartIMU();
+  void TransformToStartIMU(PointType *p);
 
-        void TransformToStartIMU(PointType *p);
+  void AccumulateIMUShiftAndRotation();
 
-        void AccumulateIMUShiftAndRotation();
+  void imuHandler(const sensor_msgs::Imu::ConstPtr &imuIn);
 
-        void imuHandler(const sensor_msgs::Imu::ConstPtr &imuIn);
+  void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsg);
 
-        void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsg);
+  void outlierCloudHandler(const sensor_msgs::PointCloud2ConstPtr &msgIn);
 
-        void outlierCloudHandler(const sensor_msgs::PointCloud2ConstPtr &msgIn);
+  void laserCloudInfoHandler(const cloud_msgs::cloud_infoConstPtr &msgIn);
 
-        void laserCloudInfoHandler(const cloud_msgs::cloud_infoConstPtr &msgIn);
+  void adjustDistortion();
 
-        void adjustDistortion();
+  void calculateSmoothness();
 
-        void calculateSmoothness();
+  void markOccludedPoints();
 
-        void markOccludedPoints();
+  void extractFeatures();
 
-        void extractFeatures();
+  void publishCloud();
 
-        void publishCloud();
+  void TransformToStart(PointType const *const pi, PointType *const po);
 
-        void TransformToStart(PointType const *const pi, PointType *const po);
+  void TransformToEnd(PointType const *const pi, PointType *const po);
 
-        void TransformToEnd(PointType const *const pi, PointType *const po);
+  void PluginIMURotation(float bcx, float bcy, float bcz, float blx, float bly, float blz,
+                         float alx, float aly, float alz, float &acx, float &acy, float &acz);
 
-        void PluginIMURotation(float bcx, float bcy, float bcz, float blx, float bly, float blz,
-                               float alx, float aly, float alz, float &acx, float &acy, float &acz);
+  void AccumulateRotation(float cx, float cy, float cz, float lx, float ly, float lz,
+                          float &ox, float &oy, float &oz);
 
-        void AccumulateRotation(float cx, float cy, float cz, float lx, float ly, float lz,
-                                float &ox, float &oy, float &oz);
+  void findCorrespondingCornerFeatures(int iterCount);
 
-        void findCorrespondingCornerFeatures(int iterCount);
+  void findCorrespondingSurfFeatures(int iterCount);
 
-        void findCorrespondingSurfFeatures(int iterCount);
+  bool calculateTransformationSurf(int iterCount);
 
-        bool calculateTransformationSurf(int iterCount);
+  bool calculateTransformationCorner(int iterCount);
 
-        bool calculateTransformationCorner(int iterCount);
+  bool calculateTransformation(int iterCount);
 
-        bool calculateTransformation(int iterCount);
+  void checkSystemInitialization();
 
-        void checkSystemInitialization();
+  void updateInitialGuess();
 
-        void updateInitialGuess();
+  void updateTransformation();
 
-        void updateTransformation();
+  void integrateTransformation();
 
-        void integrateTransformation();
+  void publishOdometry();
 
-        void publishOdometry();
+  void adjustOutlierCloud();
 
-        void adjustOutlierCloud();
+  void publishCloudsLast();
 
-        void publishCloudsLast();
+ private:
+  ros::NodeHandle nh;
 
-    private:
+  ros::Subscriber subLaserCloud;
+  ros::Subscriber subLaserCloudInfo;
+  ros::Subscriber subOutlierCloud;
+  ros::Subscriber subImu;
 
-        ros::NodeHandle nh;
+  ros::Publisher pubCornerPointsSharp;
+  ros::Publisher pubCornerPointsLessSharp;
+  ros::Publisher pubSurfPointsFlat;
+  ros::Publisher pubSurfPointsLessFlat;
 
-        ros::Subscriber subLaserCloud;
-        ros::Subscriber subLaserCloudInfo;
-        ros::Subscriber subOutlierCloud;
-        ros::Subscriber subImu;
+  pcl::PointCloud<PointType>::Ptr segmentedCloud;
+  pcl::PointCloud<PointType>::Ptr outlierCloud;
 
-        ros::Publisher pubCornerPointsSharp;
-        ros::Publisher pubCornerPointsLessSharp;
-        ros::Publisher pubSurfPointsFlat;
-        ros::Publisher pubSurfPointsLessFlat;
+  pcl::PointCloud<PointType>::Ptr cornerPointsSharp;
+  pcl::PointCloud<PointType>::Ptr cornerPointsLessSharp;
+  pcl::PointCloud<PointType>::Ptr surfPointsFlat;
+  pcl::PointCloud<PointType>::Ptr surfPointsLessFlat;
 
-        pcl::PointCloud<PointType>::Ptr segmentedCloud;
-        pcl::PointCloud<PointType>::Ptr outlierCloud;
+  pcl::PointCloud<PointType>::Ptr surfPointsLessFlatScan;
+  pcl::PointCloud<PointType>::Ptr surfPointsLessFlatScanDS;
 
-        pcl::PointCloud<PointType>::Ptr cornerPointsSharp;
-        pcl::PointCloud<PointType>::Ptr cornerPointsLessSharp;
-        pcl::PointCloud<PointType>::Ptr surfPointsFlat;
-        pcl::PointCloud<PointType>::Ptr surfPointsLessFlat;
+  pcl::VoxelGrid<PointType> downSizeFilter;
 
-        pcl::PointCloud<PointType>::Ptr surfPointsLessFlatScan;
-        pcl::PointCloud<PointType>::Ptr surfPointsLessFlatScanDS;
+  double timeScanCur;
+  double timeNewSegmentedCloud;
+  double timeNewSegmentedCloudInfo;
+  double timeNewOutlierCloud;
 
-        pcl::VoxelGrid<PointType> downSizeFilter;
+  bool newSegmentedCloud;
+  bool newSegmentedCloudInfo;
+  bool newOutlierCloud;
 
-        double timeScanCur;
-        double timeNewSegmentedCloud;
-        double timeNewSegmentedCloudInfo;
-        double timeNewOutlierCloud;
+  cloud_msgs::cloud_info segInfo;
+  std_msgs::Header cloudHeader;
 
-        bool newSegmentedCloud;
-        bool newSegmentedCloudInfo;
-        bool newOutlierCloud;
+  int systemInitCount;
+  bool systemInited;
 
-        cloud_msgs::cloud_info segInfo;
-        std_msgs::Header cloudHeader;
+  std::vector<smoothness_t> cloudSmoothness;
+  float *cloudCurvature;
+  int *cloudNeighborPicked;
+  int *cloudLabel;
 
-        int systemInitCount;
-        bool systemInited;
+  int imuPointerFront;
+  int imuPointerLast;
+  int imuPointerLastIteration;
 
-        std::vector<smoothness_t> cloudSmoothness;
-        float *cloudCurvature;
-        int *cloudNeighborPicked;
-        int *cloudLabel;
+  float imuRollStart, imuPitchStart, imuYawStart;
+  float cosImuRollStart, cosImuPitchStart, cosImuYawStart, sinImuRollStart, sinImuPitchStart, sinImuYawStart;
+  float imuRollCur, imuPitchCur, imuYawCur;
 
-        int imuPointerFront;
-        int imuPointerLast;
-        int imuPointerLastIteration;
+  float imuVeloXStart, imuVeloYStart, imuVeloZStart;
+  float imuShiftXStart, imuShiftYStart, imuShiftZStart;
 
-        float imuRollStart, imuPitchStart, imuYawStart;
-        float cosImuRollStart, cosImuPitchStart, cosImuYawStart, sinImuRollStart, sinImuPitchStart, sinImuYawStart;
-        float imuRollCur, imuPitchCur, imuYawCur;
+  float imuVeloXCur, imuVeloYCur, imuVeloZCur;
+  float imuShiftXCur, imuShiftYCur, imuShiftZCur;
 
-        float imuVeloXStart, imuVeloYStart, imuVeloZStart;
-        float imuShiftXStart, imuShiftYStart, imuShiftZStart;
+  float imuShiftFromStartXCur, imuShiftFromStartYCur, imuShiftFromStartZCur;
+  float imuVeloFromStartXCur, imuVeloFromStartYCur, imuVeloFromStartZCur;
 
-        float imuVeloXCur, imuVeloYCur, imuVeloZCur;
-        float imuShiftXCur, imuShiftYCur, imuShiftZCur;
+  float imuAngularRotationXCur, imuAngularRotationYCur, imuAngularRotationZCur;
+  float imuAngularRotationXLast, imuAngularRotationYLast, imuAngularRotationZLast;
+  float imuAngularFromStartX, imuAngularFromStartY, imuAngularFromStartZ;
 
-        float imuShiftFromStartXCur, imuShiftFromStartYCur, imuShiftFromStartZCur;
-        float imuVeloFromStartXCur, imuVeloFromStartYCur, imuVeloFromStartZCur;
+  double imuTime[imuQueLength];
+  float imuRoll[imuQueLength];
+  float imuPitch[imuQueLength];
+  float imuYaw[imuQueLength];
 
-        float imuAngularRotationXCur, imuAngularRotationYCur, imuAngularRotationZCur;
-        float imuAngularRotationXLast, imuAngularRotationYLast, imuAngularRotationZLast;
-        float imuAngularFromStartX, imuAngularFromStartY, imuAngularFromStartZ;
+  float imuAccX[imuQueLength];
+  float imuAccY[imuQueLength];
+  float imuAccZ[imuQueLength];
 
-        double imuTime[imuQueLength];
-        float imuRoll[imuQueLength];
-        float imuPitch[imuQueLength];
-        float imuYaw[imuQueLength];
+  float imuVeloX[imuQueLength];
+  float imuVeloY[imuQueLength];
+  float imuVeloZ[imuQueLength];
 
-        float imuAccX[imuQueLength];
-        float imuAccY[imuQueLength];
-        float imuAccZ[imuQueLength];
+  float imuShiftX[imuQueLength];
+  float imuShiftY[imuQueLength];
+  float imuShiftZ[imuQueLength];
 
-        float imuVeloX[imuQueLength];
-        float imuVeloY[imuQueLength];
-        float imuVeloZ[imuQueLength];
+  float imuAngularVeloX[imuQueLength];
+  float imuAngularVeloY[imuQueLength];
+  float imuAngularVeloZ[imuQueLength];
 
-        float imuShiftX[imuQueLength];
-        float imuShiftY[imuQueLength];
-        float imuShiftZ[imuQueLength];
+  float imuAngularRotationX[imuQueLength];
+  float imuAngularRotationY[imuQueLength];
+  float imuAngularRotationZ[imuQueLength];
 
-        float imuAngularVeloX[imuQueLength];
-        float imuAngularVeloY[imuQueLength];
-        float imuAngularVeloZ[imuQueLength];
 
-        float imuAngularRotationX[imuQueLength];
-        float imuAngularRotationY[imuQueLength];
-        float imuAngularRotationZ[imuQueLength];
+  ros::Publisher pubLaserCloudCornerLast;
+  ros::Publisher pubLaserCloudSurfLast;
+  ros::Publisher pubLaserOdometry;
+  ros::Publisher pubOutlierCloudLast;
 
+  int skipFrameNum;
+  bool systemInitedLM;
 
-        ros::Publisher pubLaserCloudCornerLast;
-        ros::Publisher pubLaserCloudSurfLast;
-        ros::Publisher pubLaserOdometry;
-        ros::Publisher pubOutlierCloudLast;
+  int laserCloudCornerLastNum;
+  int laserCloudSurfLastNum;
 
-        int skipFrameNum;
-        bool systemInitedLM;
+  int *pointSelCornerInd;
+  float *pointSearchCornerInd1;
+  float *pointSearchCornerInd2;
 
-        int laserCloudCornerLastNum;
-        int laserCloudSurfLastNum;
+  int *pointSelSurfInd;
+  float *pointSearchSurfInd1;
+  float *pointSearchSurfInd2;
+  float *pointSearchSurfInd3;
 
-        int *pointSelCornerInd;
-        float *pointSearchCornerInd1;
-        float *pointSearchCornerInd2;
+  float transformCur[6];
+  float transformSum[6];
 
-        int *pointSelSurfInd;
-        float *pointSearchSurfInd1;
-        float *pointSearchSurfInd2;
-        float *pointSearchSurfInd3;
+  float imuRollLast, imuPitchLast, imuYawLast;
+  float imuShiftFromStartX, imuShiftFromStartY, imuShiftFromStartZ;
+  float imuVeloFromStartX, imuVeloFromStartY, imuVeloFromStartZ;
 
-        float transformCur[6];
-        float transformSum[6];
+  pcl::PointCloud<PointType>::Ptr laserCloudCornerLast;
+  pcl::PointCloud<PointType>::Ptr laserCloudSurfLast;
+  pcl::PointCloud<PointType>::Ptr laserCloudOri;
+  pcl::PointCloud<PointType>::Ptr coeffSel;
 
-        float imuRollLast, imuPitchLast, imuYawLast;
-        float imuShiftFromStartX, imuShiftFromStartY, imuShiftFromStartZ;
-        float imuVeloFromStartX, imuVeloFromStartY, imuVeloFromStartZ;
+  pcl::KdTreeFLANN<PointType>::Ptr kdtreeCornerLast;
+  pcl::KdTreeFLANN<PointType>::Ptr kdtreeSurfLast;
 
-        pcl::PointCloud<PointType>::Ptr laserCloudCornerLast;
-        pcl::PointCloud<PointType>::Ptr laserCloudSurfLast;
-        pcl::PointCloud<PointType>::Ptr laserCloudOri;
-        pcl::PointCloud<PointType>::Ptr coeffSel;
+  std::vector<int> pointSearchInd;
+  std::vector<float> pointSearchSqDis;
 
-        pcl::KdTreeFLANN<PointType>::Ptr kdtreeCornerLast;
-        pcl::KdTreeFLANN<PointType>::Ptr kdtreeSurfLast;
+  PointType pointOri, pointSel, tripod1, tripod2, tripod3, pointProj, coeff;
 
-        std::vector<int> pointSearchInd;
-        std::vector<float> pointSearchSqDis;
+  nav_msgs::Odometry laserOdometry;
 
-        PointType pointOri, pointSel, tripod1, tripod2, tripod3, pointProj, coeff;
+  tf::TransformBroadcaster tfBroadcaster;
+  tf::StampedTransform laserOdometryTrans;
 
-        nav_msgs::Odometry laserOdometry;
+  bool isDegenerate;
+  cv::Mat matP;
 
-        tf::TransformBroadcaster tfBroadcaster;
-        tf::StampedTransform laserOdometryTrans;
+  int frameCount;
 
-        bool isDegenerate;
-        cv::Mat matP;
+  //        // params
+  //        std::string imuTopic;
+  //
+  //        int N_SCAN;
+  //        int Horizon_SCAN;
+};
+} // namespace lego_loam
 
-        int frameCount;
 
-//        // params
-//        std::string imuTopic;
-//
-//        int N_SCAN;
-//        int Horizon_SCAN;
-    };
-}
 
-
-
-
-#endif //SRC_FEATURE_ASSOCIATION_H
+#endif // SRC_FEATURE_ASSOCIATION_H

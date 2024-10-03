@@ -206,7 +206,7 @@ double ISCGenerationClass::calculate_geometry_dis(const ISCDescriptor &desc1,
 {
   double similarity = 0.0;
 
-  // i is isc列平移量
+  // 几何结构匹配; i is isc列平移量
   for (int i = 0; i < sectors; i++)
   {
     int match_count = 0;
@@ -215,6 +215,8 @@ double ISCGenerationClass::calculate_geometry_dis(const ISCDescriptor &desc1,
       int new_col = p + i >= sectors ? p + i - sectors : p + i;
       for (int q = 0; q < rings; q++)
       {
+        // 由于二值矩阵的列向量表示方位角，因此LiDAR的旋转可以通过矩阵的列移动反映．
+        // 因此，为了检测视角变化，我们需要计算具有最大几何相似度的列移动
         if ((desc1.at<unsigned char>(q, p) == true && desc2.at<unsigned char>(q, new_col) == true)
             || (desc1.at<unsigned char>(q, p) == false && desc2.at<unsigned char>(q, new_col) == false))
         {
@@ -237,6 +239,8 @@ double ISCGenerationClass::calculate_intensity_dis(const ISCDescriptor &desc1,
                                                    int &angle)
 {
   double difference = 1.0;
+  // 密度结构重识别 计算上一步最佳列旋转后的和候选帧的ISC的密度相似度
+  // 取ISC对应列的余弦距离的均值
   double angle_temp = angle;
   for (int i = angle_temp - 10; i < angle_temp + 10; i++)
   {
